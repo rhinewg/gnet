@@ -16,7 +16,6 @@
 package gnet
 
 import (
-	kcp2 "github.com/panjf2000/gnet/internal/kcp"
 	"net"
 	"sync"
 
@@ -68,7 +67,6 @@ type stdConn struct {
 	remoteAddr    net.Addr               // remote peer addr
 	byteBuffer    *bbPool.ByteBuffer     // bytes buffer for buffering current packet and data in ring-buffer
 	inboundBuffer *ringbuffer.RingBuffer // buffer for data from the peer
-	kcp 		  *kcp2.KCP               // kcp control
 }
 
 func packTCPConn(c *stdConn, buf []byte) *tcpConn {
@@ -81,13 +79,6 @@ func packTCPConn(c *stdConn, buf []byte) *tcpConn {
 func packUDPConn(c *stdConn, buf []byte) *udpConn {
 	_, _ = c.buffer.Write(buf)
 	packet := &udpConn{c: c}
-	return packet
-}
-
-func packKCPConn(c *stdConn, buf []byte,ackNoDelay bool) *kcpConn {
-	_, _ = c.buffer.Write(buf)
-	c.kcp.Input(buf,true,ackNoDelay)
-	packet := &kcpConn{c: c}
 	return packet
 }
 
@@ -149,23 +140,11 @@ func (c *stdConn) releaseUDP() {
 	c.buffer = nil
 }
 
-func newKCPConn(el *eventloop, localAddr, remoteAddr net.Addr) *stdConn {
-	c := &stdConn{
-		loop:       el,
-		buffer:     bbPool.Get(),
-		localAddr:  localAddr,
-		remoteAddr: remoteAddr,
-		kcp:        kcp2.NewKCP(0,nil),
-	}
-	return c
-}
-
 func (c *stdConn) releaseKCP() {
 	c.ctx = nil
 	c.localAddr = nil
 	bbPool.Put(c.buffer)
 	c.buffer = nil
-	c.kcp = nil
 }
 
 func (c *stdConn) read() ([]byte, error) {

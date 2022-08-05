@@ -15,7 +15,6 @@
 package gnet
 
 import (
-	"github.com/panjf2000/gnet/internal/kcp"
 	"net"
 	"os"
 	"sync"
@@ -23,6 +22,7 @@ import (
 	"github.com/panjf2000/gnet/internal/netpoll"
 	"github.com/panjf2000/gnet/pkg/errors"
 	"github.com/panjf2000/gnet/pkg/logging"
+	"github.com/xtaci/kcp-go/v5"
 )
 
 type listener struct {
