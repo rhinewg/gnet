@@ -266,7 +266,7 @@ func (es *EventServer) Tick() (delay time.Duration, action Action) {
 //  udp4  - IPv4
 //  udp6  - IPv6
 //  unix  - Unix Domain Socket
-//
+//	kcp	  - kcp
 // The "tcp" network scheme is assumed when one is not specified.
 func Serve(eventHandler EventHandler, protoAddr string, opts ...Option) (err error) {
 	options := loadOptions(opts...)

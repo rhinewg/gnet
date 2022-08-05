@@ -15,6 +15,7 @@
 package gnet
 
 import (
+	"github.com/panjf2000/gnet/internal/kcp"
 	"net"
 	"os"
 	"sync"
@@ -51,6 +52,11 @@ func (ln *listener) normalize() (err error) {
 			return
 		}
 		ln.addr = ln.packetConn.LocalAddr()
+	case "kcp":
+		if ln.ln,err = kcp.ListenWithOptions(ln.address,nil,0,0); err != nil {
+			return
+		}
+		ln.addr = ln.ln.Addr()
 	default:
 		err = errors.ErrUnsupportedProtocol
 	}

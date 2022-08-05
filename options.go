@@ -112,7 +112,9 @@ type Options struct {
 
 	// Logger is the customized logger for logging info, if it is not set,
 	// then gnet will use the default logger powered by go.uber.org/zap.
-	Logger logging.Logger
+	Logger     logging.Logger
+
+	AckNoDelay bool
 }
 
 // WithOptions sets up all options.
