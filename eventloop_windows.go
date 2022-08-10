@@ -76,8 +76,6 @@ func (el *eventloop) run(lockOSThread bool) {
 			err = el.read(v.c)
 		case *udpConn:
 			err = el.readUDP(v.c)
-		case *kcpConn:
-			err = el.readKCP(v.c)
 		case *stderr:
 			err = el.error(v.c, v.err)
 		case *signalTask:
@@ -257,19 +255,6 @@ func (el *eventloop) readUDP(c *stdConn) error {
 		return errors.ErrServerShutdown
 	}
 	c.releaseUDP()
-
-	return nil
-}
-
-func (el *eventloop) readKCP(c *stdConn) error {
-	out, action := el.eventHandler.React(c.buffer.Bytes(), c)
-	if out != nil {
-		_ = c.SendTo(out)
-	}
-	if action == Shutdown {
-		return errors.ErrServerShutdown
-	}
-	c.releaseKCP()
 
 	return nil
 }

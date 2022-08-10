@@ -48,10 +48,6 @@ type udpConn struct {
 	c *stdConn
 }
 
-type kcpConn struct {
-	c *stdConn
-}
-
 var (
 	signalTaskPool = sync.Pool{New: func() interface{} { return new(signalTask) }}
 	dataTaskPool   = sync.Pool{New: func() interface{} { return new(dataTask) }}
@@ -134,13 +130,6 @@ func newUDPConn(el *eventloop, localAddr, remoteAddr net.Addr) *stdConn {
 }
 
 func (c *stdConn) releaseUDP() {
-	c.ctx = nil
-	c.localAddr = nil
-	bbPool.Put(c.buffer)
-	c.buffer = nil
-}
-
-func (c *stdConn) releaseKCP() {
 	c.ctx = nil
 	c.localAddr = nil
 	bbPool.Put(c.buffer)
