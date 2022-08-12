@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !poll_opt
-// +build !poll_opt
+//go:build !poll_opt && !kcp
+// +build !poll_opt,!kcp
 
 package gnet
 

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux || freebsd || dragonfly || darwin
-// +build linux freebsd dragonfly darwin
+//go:build linux && !kcp || freebsd || dragonfly || darwin
+// +build linux,!kcp freebsd dragonfly darwin
 
 package gnet
 

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux || freebsd || dragonfly || darwin
-// +build linux freebsd dragonfly darwin
+//go:build linux && !kcp || freebsd || dragonfly || darwin
+// +build linux,!kcp freebsd dragonfly darwin
 
 package gnet
 
@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/panjf2000/gnet/internal/socket"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -323,6 +324,35 @@ func (el *eventloop) readUDP(fd int, _ netpoll.IOEvent) error {
 		return fmt.Errorf("failed to read UDP packet from fd=%d in event-loop(%d), %v",
 			fd, el.idx, os.NewSyscallError("recvfrom", err))
 	}
+	var c *conn
+	if fd == el.ln.fd {
+		c = newUDPConn(fd, el, el.ln.addr, sa, false)
+	} else {
+		c = el.udpSockets[fd]
+	}
+	out, action := el.eventHandler.React(el.buffer[:n], c)
+	if out != nil {
+		_ = c.sendTo(out)
+	}
+	if c.peer != nil {
+		c.releaseUDP()
+	}
+	if action == Shutdown {
+		return gerrors.ErrServerShutdown
+	}
+	return nil
+}
+
+func (el *eventloop) readKCP(fd int, _ netpoll.IOEvent) error {
+	n, sa, err := unix.Recvfrom(fd, el.buffer, 0)
+	if err != nil {
+		if err == unix.EAGAIN || err == unix.EWOULDBLOCK {
+			return nil
+		}
+		return fmt.Errorf("failed to read UDP packet from fd=%d in event-loop(%d), %v",
+			fd, el.idx, os.NewSyscallError("recvfrom", err))
+	}
+	el.ln.kcpListener.PacketInput(el.buffer[:n],socket.SockaddrToUDPAddr(sa))
 	var c *conn
 	if fd == el.ln.fd {
 		c = newUDPConn(fd, el, el.ln.addr, sa, false)

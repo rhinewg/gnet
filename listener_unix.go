@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build freebsd || dragonfly || darwin
-// +build  freebsd dragonfly darwin
+//go:build linux && !kcp || freebsd || dragonfly || darwin
+// +build linux,!kcp freebsd dragonfly darwin
 
 package gnet
 
@@ -25,6 +25,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/panjf2000/gnet/internal/kcp"
 	"github.com/panjf2000/gnet/internal/netpoll"
 	"github.com/panjf2000/gnet/internal/socket"
 	"github.com/panjf2000/gnet/pkg/errors"
@@ -38,6 +39,7 @@ type listener struct {
 	address, network string
 	sockOpts         []socket.Option
 	pollAttachment   *netpoll.PollAttachment // listener attachment for poller
+	kcpListener		*kcp.Listener
 }
 
 func (ln *listener) packPollAttachment(handler netpoll.PollEventHandler) *netpoll.PollAttachment {
@@ -60,6 +62,12 @@ func (ln *listener) normalize() (err error) {
 	case "unix":
 		_ = os.RemoveAll(ln.address)
 		ln.fd, ln.addr, err = socket.UnixSocket(ln.network, ln.address, true, ln.sockOpts...)
+	case "kcp":
+		ln.fd, ln.addr, err = socket.UDPSocket(ln.network, ln.address, false, ln.sockOpts...)
+		if ln.kcpListener,err = kcp.ListenWithOptions(ln.fd,ln.address,0,0); err != nil {
+			return
+		}
+		ln.network = "kcp"
 	default:
 		err = errors.ErrUnsupportedProtocol
 	}

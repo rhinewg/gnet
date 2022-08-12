@@ -11,9 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-//go:build linux && !kcp || freebsd || dragonfly || darwin
-// +build linux,!kcp freebsd dragonfly darwin
+//go:build kcp && !windows
+// +build kcp,!windows
 
 package gnet
 

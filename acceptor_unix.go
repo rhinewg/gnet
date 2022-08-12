@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build  freebsd || dragonfly || darwin
-// +build freebsd dragonfly darwin
+//go:build linux && !kcp || freebsd || dragonfly || darwin
+// +build linux,!kcp freebsd dragonfly darwin
 
 package gnet
 
@@ -62,6 +62,8 @@ func (svr *server) accept(fd int, _ netpoll.IOEvent) error {
 func (el *eventloop) accept(fd int, ev netpoll.IOEvent) error {
 	if el.ln.network == "udp" {
 		return el.readUDP(fd, ev)
+	} else if el.ln.network == "kcp"{
+		return el.readKCP(fd,ev)
 	}
 
 	nfd, sa, err := unix.Accept(el.ln.fd)

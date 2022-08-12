@@ -323,7 +323,7 @@ func TestServe(t *testing.T) {
 	t.Run("poll", func(t *testing.T) {
 		t.Run("tcp", func(t *testing.T) {
 			t.Run("1-loop", func(t *testing.T) {
-				testServe(t, "tcp", ":9991", false, false, false, false, false, 10, RoundRobin)
+				testServe(t, "kcp", ":9991", false, false, false, false, false, 10, RoundRobin)
 			})
 			t.Run("N-loop", func(t *testing.T) {
 				testServe(t, "tcp", ":9992", false, false, true, false, false, 10, LeastConnections)

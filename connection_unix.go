@@ -13,12 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux || freebsd || dragonfly || darwin
-// +build linux freebsd dragonfly darwin
+//go:build linux && !kcp || freebsd || dragonfly || darwin
+// +build linux,!kcp freebsd dragonfly darwin
 
 package gnet
 
 import (
+	"github.com/panjf2000/gnet/internal/kcp"
 	"net"
 	"os"
 
@@ -32,6 +33,8 @@ import (
 	bsPool "github.com/panjf2000/gnet/pkg/pool/byteslice"
 	rbPool "github.com/panjf2000/gnet/pkg/pool/ringbuffer"
 	"github.com/panjf2000/gnet/pkg/ringbuffer"
+
+
 )
 
 type conn struct {
@@ -49,6 +52,7 @@ type conn struct {
 	inboundBuffer  *ringbuffer.RingBuffer  // buffer for leftover data from the peer
 	outboundBuffer *mixedbuffer.Buffer     // buffer for data that is eligible to be sent to the peer
 	pollAttachment *netpoll.PollAttachment // connection attachment for poller
+	kcpSession     *kcp.UDPSession
 }
 
 func newTCPConn(fd int, el *eventloop, sa unix.Sockaddr, codec ICodec, localAddr, remoteAddr net.Addr) (c *conn) {
@@ -105,6 +109,34 @@ func newUDPConn(fd int, el *eventloop, localAddr net.Addr, sa unix.Sockaddr, con
 }
 
 func (c *conn) releaseUDP() {
+	c.ctx = nil
+	if addr, ok := c.localAddr.(*net.UDPAddr); ok && c.localAddr != c.loop.ln.addr {
+		bsPool.Put(addr.IP)
+	}
+	if addr, ok := c.remoteAddr.(*net.UDPAddr); ok {
+		bsPool.Put(addr.IP)
+	}
+	c.localAddr = nil
+	c.remoteAddr = nil
+	netpoll.PutPollAttachment(c.pollAttachment)
+	c.pollAttachment = nil
+}
+
+func newKCPConn(fd int, el *eventloop, localAddr net.Addr, sa unix.Sockaddr, connected bool) (c *conn) {
+	c = &conn{
+		fd:         fd,
+		peer:       sa,
+		loop:       el,
+		localAddr:  localAddr,
+		remoteAddr: socket.SockaddrToUDPAddr(sa),
+	}
+	if connected {
+		c.peer = nil
+	}
+	return
+}
+
+func (c *conn) releaseKCP() {
 	c.ctx = nil
 	if addr, ok := c.localAddr.(*net.UDPAddr); ok && c.localAddr != c.loop.ln.addr {
 		bsPool.Put(addr.IP)
